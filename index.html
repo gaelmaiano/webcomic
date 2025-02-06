@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcomics Viewer</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: black;
+            overflow: hidden;
+            touch-action: none;
+            user-select: none;
+        }
+
+        #comic-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: transform 0.3s ease;
+        }
+
+        .comic-page {
+            max-width: 90vw;
+            max-height: 90vh;
+            object-fit: contain;
+            cursor: grab;
+        }
+
+        .nav-button {
+            position: fixed;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 20px;
+            cursor: pointer;
+            font-size: 24px;
+            transition: 0.3s;
+        }
+
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        #prev {
+            left: 10px;
+        }
+
+        #next {
+            right: 10px;
+        }
+
+        #zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .zoom-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 0 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="comic-container">
+        <img src="page1.png" class="comic-page" id="current-page">
+    </div>
+
+    <button class="nav-button" id="prev">‹</button>
+    <button class="nav-button" id="next">›</button>
+
+    <div id="zoom-controls">
+        <button class="zoom-button" id="zoom-in">+</button>
+        <button class="zoom-button" id="zoom-out">-</button>
+        <button class="zoom-button" id="reset-zoom">Reset</button>
+    </div>
+
+    <script>
+        let currentScale = 1;
+        let isDragging = false;
+        let startX, startY, translateX = 0, translateY = 0;
+        const container = document.getElementById('comic-container');
+        const currentPage = document.getElementById('current-page');
+        let pageNumber = 1;
+
+        // Navigation
+        document.getElementById('prev').addEventListener('click', prevPage);
+        document.getElementById('next').addEventListener('click', nextPage);
+
+        // Zoom
+        document.getElementById('zoom-in').addEventListener('click', () => zoom(1.2));
+        document.getElementById('zoom-out').addEventListener('click', () => zoom(0.8));
+        document.getElementById('reset-zoom').addEventListener('click', resetZoom);
+
+        // Drag to pan
+        currentPage.addEventListener('mousedown', startDrag);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('mouseleave', endDrag);
+
+        // Touch events
+        currentPage.addEventListener('touchstart', touchStart);
+        document.addEventListener('touchmove', touchMove);
+        document.addEventListener('touchend', endDrag);
+
+        function updateTransform() {
+            container.style.transform = `translate(-50%, -50%) translate(${translateX}px, ${translateY}px) scale(${currentScale})`;
+        }
+
+        function zoom(factor) {
+            currentScale *= factor;
+            updateTransform();
+        }
+
+        function resetZoom() {
+            currentScale = 1;
+            translateX = 0;
+            translateY = 0;
+            updateTransform();
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            startX = e.clientX || e.touches[0].clientX;
+            startY = e.clientY || e.touches[0].clientY;
+            currentPage.style.cursor = 'grabbing';
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+            
+            translateX += (x - startX) / currentScale;
+            translateY += (y - startY) / currentScale;
+            
+            startX = x;
+            startY = y;
+            
+            updateTransform();
+        }
+
+        function endDrag() {
+            isDragging = false;
+            currentPage.style.cursor = 'grab';
+        }
+
+        function touchStart(e) {
+            startDrag(e.touches[0]);
+        }
+
+        function touchMove(e) {
+            drag(e.touches[0]);
+        }
+
+        function nextPage() {
+            if (pageNumber < 4) {
+                pageNumber++;
+                loadPage(`page${pageNumber}.png`);
+            }
+        }
+
+        function prevPage() {
+            if (pageNumber > 1) {
+                pageNumber--;
+                loadPage(`page${pageNumber}.png`);
+            }
+        }
+
+        function loadPage(src) {
+            currentPage.src = src;
+            resetZoom();
+        }
+    </script>
+</body>
+</html>
